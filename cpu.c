@@ -114,11 +114,12 @@ void cpu_run(struct cpu *cpu)
         {
             operandA = cpu_ram_read(cpu, (cpu->pc + 1) & 0xff);
         }
-        int cur_index = ir;
         
+        int add_to_pc = (ir >> 6) + 1;
+        int is_subroutine = (ir >> 4) & 1;
         // Trouble shooting...
         printf("TRACE: cpu-pc: %d        cpu-ir: %02X         operandA: %02x       operandB: %02x\n", cpu->pc, ir, operandA, operandB);
-       
+
         // 4. switch() over it to decide on a course of action.
         switch (ir)
         {
@@ -149,13 +150,13 @@ void cpu_run(struct cpu *cpu)
             printf("%d\n", cpu->reg[operandA]);
             break;
 
-        case MUL:
-            alu(cpu, ALU_MUL, operandA, operandB);
-            break;
+            // case MUL:
+            //     alu(cpu, ALU_MUL, operandA, operandB);
+            //     break;
 
-        case ADD:
-            alu(cpu, ALU_ADD, operandA, operandB);
-            break;
+            // case ADD:
+            //     alu(cpu, ALU_ADD, operandA, operandB);
+            //     break;
 
         case JMP:
             cpu->pc = cpu->reg[operandA];
@@ -166,6 +167,8 @@ void cpu_run(struct cpu *cpu)
             if (cpu->flag == 1)
             {
                 cpu->pc = cpu->reg[operandA];
+            } else {
+                cpu->pc += add_to_pc;
             }
             break;
 
@@ -173,6 +176,8 @@ void cpu_run(struct cpu *cpu)
             if (cpu->flag != 1)
             {
                 cpu->pc = cpu->reg[operandA];
+            } else {
+                cpu->pc += add_to_pc;
             }
             break;
 
@@ -195,8 +200,13 @@ void cpu_run(struct cpu *cpu)
             printf("Error: Unknown instruction %02x at %02x\n", ir, cpu->pc);
             exit(1);
         }
+
+        
         // 6. Move the PC to the next instruction.
-        cpu->pc += num_operands + 1;
+        if (!is_subroutine)
+        {
+            cpu->pc += add_to_pc;
+        }
     }
 }
 
@@ -207,9 +217,8 @@ void cpu_init(struct cpu *cpu)
 {
     // TODO: Initialize the PC and other special registers
     //cpu = malloc(sizeOf(struct cpu));
-
     cpu->pc = 0;
-    cpu->reg[7] = 0xF4;
+    cpu->reg[SP] = 0xF4;
     cpu->flag = 0;
     memset(cpu->reg, 0, sizeof(cpu->reg));
     memset(cpu->ram, 0, sizeof(cpu->ram));
