@@ -21,8 +21,8 @@ enum alu_op
 {
     ALU_MUL,
     // Add more here
-    ALU_ADD, 
-    ALU_CMP
+    ALU_ADD
+    //,ALU_CMP
 };
 
 // Instructions

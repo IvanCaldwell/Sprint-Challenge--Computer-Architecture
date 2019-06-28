@@ -11,15 +11,15 @@
 unsigned char cpu_ram_read(struct cpu *cpu, unsigned char index)
 {
     return cpu->ram[index];
-};
+}
 
 /**
  * Helper function to write a value from the specified index in RAM
  */
 void cpu_ram_write(struct cpu *cpu, unsigned char index, unsigned char value)
 {
-    return cpu->ram[index] = value;
-};
+    cpu->ram[index] = value;
+}
 
 /**
  * Load the binary bytes from a .ls8 source file into a RAM array
@@ -114,13 +114,11 @@ void cpu_run(struct cpu *cpu)
         {
             operandA = cpu_ram_read(cpu, (cpu->pc + 1) & 0xff);
         }
-        else
-        {
-            //I don't think this is needed...
-            return (1);
-        }
         int cur_index = ir;
-
+        
+        // Trouble shooting...
+        printf("TRACE: cpu-pc: %d        cpu-ir: %02X         operandA: %02x       operandB: %02x\n", cpu->pc, ir, operandA, operandB);
+       
         // 4. switch() over it to decide on a course of action.
         switch (ir)
         {
@@ -159,8 +157,38 @@ void cpu_run(struct cpu *cpu)
             alu(cpu, ALU_ADD, operandA, operandB);
             break;
 
+        case JMP:
+            cpu->pc = cpu->reg[operandA];
+            break;
+
+        // Will do the comparsion before checking flag status
+        case JEQ:
+            if (cpu->flag == 1)
+            {
+                cpu->pc = cpu->reg[operandA];
+            }
+            break;
+
+        case JNE:
+            if (cpu->flag != 1)
+            {
+                cpu->pc = cpu->reg[operandA];
+            }
+            break;
+
         case CMP:
-            alu(cpu, ALU_CMP, operandA, operandB);
+            if (cpu->reg[operandA] < cpu->reg[operandB])
+            {
+                cpu->flag = 4;
+            }
+            else if (cpu->reg[operandA] > cpu->reg[operandB])
+            {
+                cpu->flag = 2;
+            }
+            else if (cpu->reg[operandA] == cpu->reg[operandB])
+            {
+                cpu->flag = 1;
+            }
             break;
 
         default:
@@ -182,7 +210,7 @@ void cpu_init(struct cpu *cpu)
 
     cpu->pc = 0;
     cpu->reg[7] = 0xF4;
-    cpu->flag = 4;
+    cpu->flag = 0;
     memset(cpu->reg, 0, sizeof(cpu->reg));
     memset(cpu->ram, 0, sizeof(cpu->ram));
 }
